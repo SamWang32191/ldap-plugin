@@ -46,7 +46,7 @@
 
 1. **下載原始碼**
    ```bash
-   git clone https://github.com/ldap-plugin/ldap-plugin.git
+   git clone https://github.com/SamWang32191/ldap-plugin.git
    cd ldap-plugin
    ```
 
@@ -189,56 +189,3 @@ src/main/resources/META-INF/
 ## 授權條款
 
 本專案採用 MIT 授權條款，詳情請參閱 LICENSE 檔案。
-
-## 版本資訊
-
-**目前版本**: 1.0.1
-
-### 最新變更 (v1.0.1 - 2025-09-26)
-- 版本更新至 1.0.1
-- 改進程式碼品質和效能
-
-### 版本歷史
-- **v1.0.0** (2024-01-01): 初始版本發布
-  - 基本 LDAP 連線功能
-  - LDAP 目錄瀏覽器
-  - LDAP 條目的新增、修改、刪除操作
-  - 多個 LDAP 伺服器連線支援
-  - 連線設定的持久化存儲
-
-## 安全性考量
-
-⚠️ **重要提醒**: 目前版本中，LDAP 連線密碼以明文形式存儲在設定檔案中。在生產環境使用時，建議：
-
-1. 限制設定檔案的存取權限
-2. 考慮使用環境變數或外部金鑰管理系統
-3. 定期更換 LDAP 帳號密碼
-
-## 貢獻指南
-
-歡迎提交 Issue 和 Pull Request 來改進這個插件！
-
-### 開發環境設定
-1. 確保安裝 Java 21 或更高版本
-2. 複製專案：`git clone https://github.com/ldap-plugin/ldap-plugin.git`
-3. 執行 `./gradlew runIde` 啟動開發環境
-
-### 程式碼貢獻
-- 遵循現有的程式碼風格
-- 為新功能添加適當的測試
-- 更新相關文件
-
-## 支援與回報問題
-
-如果您遇到問題或有建議，請在 [GitHub Issues](https://github.com/ldap-plugin/ldap-plugin/issues) 上提交。
-
-### 常見問題
-1. **連線失敗**: 檢查 LDAP 伺服器位址、埠號和認證資訊
-2. **SSL 連線問題**: 確認 SSL 憑證有效性和埠號設定
-3. **權限不足**: 確認 LDAP 帳號具有適當的讀寫權限
-
-### 獲得協助
-- 📧 Email: support@ldapplugin.com
-- 🐛 Bug 回報: [GitHub Issues](https://github.com/ldap-plugin/ldap-plugin/issues)
-- 💡 功能建議: [GitHub Discussions](https://github.com/ldap-plugin/ldap-plugin/discussions)
-
