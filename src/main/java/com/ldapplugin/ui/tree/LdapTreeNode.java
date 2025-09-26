@@ -11,11 +11,15 @@ public class LdapTreeNode extends DefaultMutableTreeNode {
     
     private final String displayName;
     private final Entry entry;
+    private final String dn;
+    private boolean childrenLoaded;
     
     public LdapTreeNode(String displayName, Entry entry) {
         super(displayName);
         this.displayName = displayName;
         this.entry = entry;
+        this.dn = entry != null ? entry.getDN() : displayName;
+        this.childrenLoaded = false;
     }
     
     public String getDisplayName() {
@@ -54,6 +58,18 @@ public class LdapTreeNode extends DefaultMutableTreeNode {
     
     public Entry getEntry() {
         return entry;
+    }
+    
+    public String getDn() {
+        return dn;
+    }
+    
+    public boolean isChildrenLoaded() {
+        return childrenLoaded;
+    }
+    
+    public void setChildrenLoaded(boolean childrenLoaded) {
+        this.childrenLoaded = childrenLoaded;
     }
     
     @Override

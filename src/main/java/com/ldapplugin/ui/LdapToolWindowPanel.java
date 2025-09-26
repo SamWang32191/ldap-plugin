@@ -15,11 +15,12 @@ import com.unboundid.ldap.sdk.Entry;
 import com.unboundid.ldap.sdk.LDAPException;
 
 import javax.swing.*;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeWillExpandListener;
+import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -116,6 +117,21 @@ public class LdapToolWindowPanel extends JPanel {
         treeModel = new LdapTreeModel();
         ldapTree = new Tree(treeModel);
         ldapTree.setCellRenderer(new LdapTreeCellRenderer());
+        ldapTree.addTreeWillExpandListener(new TreeWillExpandListener() {
+            @Override
+            public void treeWillExpand(TreeExpansionEvent event) throws ExpandVetoException {
+                Object last = event.getPath().getLastPathComponent();
+                if (last instanceof LdapTreeNode) {
+                    LdapTreeNode node = (LdapTreeNode) last;
+                    loadChildrenIfNeeded(node);
+                }
+            }
+
+            @Override
+            public void treeWillCollapse(TreeExpansionEvent event) throws ExpandVetoException {
+                // 不需處理
+            }
+        });
         
         ldapTree.addMouseListener(new MouseAdapter() {
             @Override
@@ -228,6 +244,8 @@ public class LdapToolWindowPanel extends JPanel {
             
             for (Entry entry : children) {
                 LdapTreeNode childNode = new LdapTreeNode(entry.getDN(), entry);
+                // 先放一個 placeholder 讓節點可展開，實際 children 於展開時載入
+                childNode.add(new LdapTreeNode("...", null));
                 rootNode.add(childNode);
             }
             
@@ -239,6 +257,38 @@ public class LdapToolWindowPanel extends JPanel {
         }
     }
     
+    private void loadChildrenIfNeeded(LdapTreeNode node) {
+        if (node.getEntry() == null) {
+            return; // 根或 placeholder 無需載入
+        }
+        if (node.isChildrenLoaded()) {
+            return;
+        }
+
+        LdapConnection selected = (LdapConnection) connectionComboBox.getSelectedItem();
+        if (selected == null || !selected.isConnected()) {
+            return;
+        }
+
+        try {
+            String parentDn = node.getEntry().getDN();
+            List<Entry> children = connectionService.getChildren(selected.getName(), parentDn);
+
+            node.removeAllChildren();
+            for (Entry entry : children) {
+                LdapTreeNode childNode = new LdapTreeNode(entry.getDN(), entry);
+                // 亦加入 placeholder 以支援更深層展開
+                childNode.add(new LdapTreeNode("...", null));
+                node.add(childNode);
+            }
+
+            node.setChildrenLoaded(true);
+            treeModel.reload(node);
+        } catch (LDAPException e) {
+            Messages.showErrorDialog("載入子節點失敗: " + e.getMessage(), "錯誤");
+        }
+    }
+
     private void showEntryDetails(LdapTreeNode node) {
         if (node.getEntry() == null) {
             detailsArea.setText("沒有詳細資訊");
