@@ -23,6 +23,11 @@ public interface LdapConnectionService {
     void removeConnection(String connectionName);
     
     /**
+     * 更新 LDAP 連線
+     */
+    void updateConnection(String originalName, LdapConnection connection);
+    
+    /**
      * 取得所有連線
      */
     List<LdapConnection> getAllConnections();
@@ -66,6 +71,11 @@ public interface LdapConnectionService {
      * 修改 LDAP 條目
      */
     void modifyEntry(String connectionName, String dn, String attributeName, String newValue) throws LDAPException;
+    
+    /**
+     * 修改整個 LDAP 條目
+     */
+    void modifyEntry(String connectionName, Entry originalEntry, Entry modifiedEntry) throws LDAPException;
     
     /**
      * 刪除 LDAP 條目

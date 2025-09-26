@@ -9,6 +9,7 @@ import com.intellij.ui.treeStructure.Tree;
 import com.ldapplugin.model.LdapConnection;
 import com.ldapplugin.service.LdapConnectionService;
 import com.ldapplugin.ui.dialog.ConnectionConfigDialog;
+import com.ldapplugin.ui.dialog.EntryEditDialog;
 import com.ldapplugin.ui.tree.LdapTreeModel;
 import com.ldapplugin.ui.tree.LdapTreeNode;
 import com.unboundid.ldap.sdk.Entry;
@@ -91,11 +92,15 @@ public class LdapToolWindowPanel extends JPanel {
         
         // 按鈕
         JButton newConnectionBtn = new JButton("新增連線");
+        JButton editConnectionBtn = new JButton("編輯連線");
+        JButton deleteConnectionBtn = new JButton("刪除連線");
         JButton connectBtn = new JButton("連線");
         JButton disconnectBtn = new JButton("斷開");
         JButton refreshBtn = new JButton("重新整理");
         
         newConnectionBtn.addActionListener(e -> showConnectionDialog(null));
+        editConnectionBtn.addActionListener(e -> editSelectedConnection());
+        deleteConnectionBtn.addActionListener(e -> deleteSelectedConnection());
         connectBtn.addActionListener(e -> connectToSelectedLdap());
         disconnectBtn.addActionListener(e -> disconnectFromSelectedLdap());
         refreshBtn.addActionListener(e -> refreshTree());
@@ -103,6 +108,8 @@ public class LdapToolWindowPanel extends JPanel {
         panel.add(new JLabel("連線:"));
         panel.add(connectionComboBox);
         panel.add(newConnectionBtn);
+        panel.add(editConnectionBtn);
+        panel.add(deleteConnectionBtn);
         panel.add(connectBtn);
         panel.add(disconnectBtn);
         panel.add(refreshBtn);
@@ -136,11 +143,16 @@ public class LdapToolWindowPanel extends JPanel {
         ldapTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 1) {
-                    TreePath path = ldapTree.getPathForLocation(e.getX(), e.getY());
-                    if (path != null) {
-                        LdapTreeNode node = (LdapTreeNode) path.getLastPathComponent();
+                TreePath path = ldapTree.getPathForLocation(e.getX(), e.getY());
+                if (path != null) {
+                    LdapTreeNode node = (LdapTreeNode) path.getLastPathComponent();
+                    
+                    if (e.getClickCount() == 1) {
+                        // 單擊：顯示詳細資訊
                         showEntryDetails(node);
+                    } else if (e.getClickCount() == 2 && node.getEntry() != null) {
+                        // 雙擊：打開編輯對話框
+                        showEditDialog(node);
                     }
                 }
             }
@@ -189,9 +201,46 @@ public class LdapToolWindowPanel extends JPanel {
         if (dialog.showAndGet()) {
             LdapConnection newConnection = dialog.getConnection();
             if (connection == null) {
+                // 新增連線
                 connectionService.addConnection(newConnection);
+            } else {
+                // 編輯現有連線
+                connectionService.updateConnection(connection.getName(), newConnection);
             }
             refreshConnectionList();
+        }
+    }
+    
+    private void editSelectedConnection() {
+        LdapConnection selected = (LdapConnection) connectionComboBox.getSelectedItem();
+        if (selected == null) {
+            Messages.showWarningDialog("請選擇一個連線進行編輯", "警告");
+            return;
+        }
+        showConnectionDialog(selected);
+    }
+    
+    private void deleteSelectedConnection() {
+        LdapConnection selected = (LdapConnection) connectionComboBox.getSelectedItem();
+        if (selected == null) {
+            Messages.showWarningDialog("請選擇一個連線進行刪除", "警告");
+            return;
+        }
+        
+        // 確認刪除
+        int result = Messages.showYesNoDialog(
+            "確定要刪除連線 \"" + selected.getName() + "\" 嗎？", 
+            "確認刪除", 
+            Messages.getQuestionIcon()
+        );
+        
+        if (result == Messages.YES) {
+            connectionService.removeConnection(selected.getName());
+            refreshConnectionList();
+            // 清空樹狀視圖和詳細資訊
+            treeModel.setRoot(new LdapTreeNode("未連線", null));
+            detailsArea.setText("");
+            Messages.showInfoMessage("連線已刪除", "資訊");
         }
     }
     
@@ -244,8 +293,10 @@ public class LdapToolWindowPanel extends JPanel {
             
             for (Entry entry : children) {
                 LdapTreeNode childNode = new LdapTreeNode(entry.getDN(), entry);
-                // 先放一個 placeholder 讓節點可展開，實際 children 於展開時載入
-                childNode.add(new LdapTreeNode("...", null));
+                // 只有非用戶節點才加入 placeholder 讓節點可展開
+                if (!isUserNode(entry)) {
+                    childNode.add(new LdapTreeNode("...", null));
+                }
                 rootNode.add(childNode);
             }
             
@@ -277,8 +328,10 @@ public class LdapToolWindowPanel extends JPanel {
             node.removeAllChildren();
             for (Entry entry : children) {
                 LdapTreeNode childNode = new LdapTreeNode(entry.getDN(), entry);
-                // 亦加入 placeholder 以支援更深層展開
-                childNode.add(new LdapTreeNode("...", null));
+                // 只有非用戶節點才加入 placeholder 以支援更深層展開
+                if (!isUserNode(entry)) {
+                    childNode.add(new LdapTreeNode("...", null));
+                }
                 node.add(childNode);
             }
 
@@ -317,6 +370,45 @@ public class LdapToolWindowPanel extends JPanel {
         detailsArea.setCaretPosition(0);
     }
     
+    private void showEditDialog(LdapTreeNode node) {
+        if (node.getEntry() == null) {
+            return;
+        }
+        
+        LdapConnection selected = (LdapConnection) connectionComboBox.getSelectedItem();
+        if (selected == null || !selected.isConnected()) {
+            Messages.showWarningDialog("請先連線到 LDAP 伺服器", "警告");
+            return;
+        }
+        
+        EntryEditDialog dialog = new EntryEditDialog(project, node.getEntry());
+        if (dialog.showAndGet()) {
+            if (dialog.isModified()) {
+                Entry modifiedEntry = dialog.getModifiedEntry();
+                try {
+                    // 更新 LDAP 伺服器上的條目
+                    connectionService.modifyEntry(selected.getName(), node.getEntry(), modifiedEntry);
+                    
+                    // 更新樹狀節點的條目資料
+                    node.setEntry(modifiedEntry);
+                    
+                    // 重新整理詳細資訊面板
+                    showEntryDetails(node);
+                    
+                    Messages.showInfoMessage("條目已成功更新", "成功");
+                } catch (LDAPException e) {
+                    Messages.showErrorDialog("更新條目失敗: " + e.getMessage(), "錯誤");
+                }
+            }
+        }
+    }
+    
+    /**
+     * 檢查條目是否為用戶節點
+     */
+    private boolean isUserNode(Entry entry) {
+        return entry.hasObjectClass("person") || entry.hasObjectClass("user");
+    }
     
     /**
      * LDAP 樹狀視圖單元格渲染器

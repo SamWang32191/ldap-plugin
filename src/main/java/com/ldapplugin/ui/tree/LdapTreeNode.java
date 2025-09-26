@@ -10,7 +10,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 public class LdapTreeNode extends DefaultMutableTreeNode {
     
     private final String displayName;
-    private final Entry entry;
+    private Entry entry;
     private final String dn;
     private boolean childrenLoaded;
     
@@ -70,6 +70,10 @@ public class LdapTreeNode extends DefaultMutableTreeNode {
     
     public void setChildrenLoaded(boolean childrenLoaded) {
         this.childrenLoaded = childrenLoaded;
+    }
+    
+    public void setEntry(Entry entry) {
+        this.entry = entry;
     }
     
     @Override
