@@ -149,14 +149,13 @@ jobs:
       - name: 創建 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.new_version.outputs.new_version }}
-          name: Release v${{ steps.new_version.outputs.new_version }}
+          tag_name: ${{ steps.new_version.outputs.new_version }}
+          name: ${{ steps.new_version.outputs.new_version }}
           body: |
-            ## 🚀 Release v${{ steps.new_version.outputs.new_version }}
+            ## 🚀 Release ${{ steps.new_version.outputs.new_version }}
             
             ### 📦 下載
-            - [LDAP Manager Plugin](https://github.com/${{ github.repository }}/releases/download/v${{ steps.new_version.outputs.new_version }}/LDAP-Manager-${{ steps.new_version.outputs.new_version }}.zip)
-            
+            - [LDAP Manager Plugin](https://github.com/${{ github.repository }}/releases/download/${{ steps.new_version.outputs.new_version }}/LDAP-Manager-${{ steps.new_version.outputs.new_version }}.zip)
             ### 📋 變更內容
             ${{ github.event.inputs.release_notes || '版本更新' }}
             
