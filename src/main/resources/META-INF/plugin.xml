@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+    <id>com.ldapplugin.ldap-manager</id>
+    <name>LDAP Manager</name>
+    <vendor email="support@ldapplugin.com" url="https://github.com/ldap-plugin">LDAP Plugin Team</vendor>
+
+    <description><![CDATA[
+    一個功能完整的 LDAP 管理插件，支援：
+    <ul>
+        <li>LDAP 伺服器連線管理</li>
+        <li>LDAP 目錄瀏覽和搜尋</li>
+        <li>LDAP 條目的新增、修改、刪除操作</li>
+        <li>多個 LDAP 伺服器連線</li>
+        <li>連線設定的持久化存儲</li>
+    </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>版本 1.0.0</h3>
+    <ul>
+        <li>初始版本發布</li>
+        <li>基本 LDAP 連線功能</li>
+        <li>LDAP 目錄瀏覽器</li>
+        <li>CRUD 操作支援</li>
+    </ul>
+    ]]></change-notes>
+
+    <!-- 產品和插件相容性需求 -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- 擴展點 -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 工具視窗 -->
+        <toolWindow id="LDAP Manager" secondary="true" 
+                    anchor="left" factoryClass="com.ldapplugin.ui.LdapToolWindowFactory"/>
+        
+        <!-- 應用程式服務 -->
+        <applicationService serviceInterface="com.ldapplugin.service.LdapConnectionService"
+                          serviceImplementation="com.ldapplugin.service.impl.LdapConnectionServiceImpl"/>
+        
+        <!-- 持久化狀態組件 -->
+        <applicationService serviceInterface="com.ldapplugin.settings.LdapSettingsState"
+                          serviceImplementation="com.ldapplugin.settings.LdapSettingsState"/>
+    </extensions>
+
+    <!-- 動作 -->
+    <actions>
+        <group id="LdapActions" text="LDAP" description="LDAP 相關動作">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action id="ConnectToLdap" class="com.ldapplugin.action.ConnectToLdapAction" 
+                    text="連線到 LDAP" description="建立新的 LDAP 連線"/>
+            <action id="DisconnectLdap" class="com.ldapplugin.action.DisconnectLdapAction" 
+                    text="斷開 LDAP 連線" description="斷開現有的 LDAP 連線"/>
+        </group>
+    </actions>
+</idea-plugin>
