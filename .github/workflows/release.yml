@@ -1,0 +1,189 @@
+name: 手動發布 Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: '發布類型'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: '發布說明 (選填)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      
+    steps:
+      - name: 檢出代碼
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 設置 Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: 設置 Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 讀取當前版本
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep "pluginVersion = " gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "當前版本: $CURRENT_VERSION"
+
+      - name: 計算新版本
+        id: new_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.current_version }}"
+          RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+          
+          # 分割版本號
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # 根據發布類型更新版本號
+          case $RELEASE_TYPE in
+            "major")
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            "minor")
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            "patch")
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "新版本: $NEW_VERSION"
+
+      - name: 更新版本號
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          
+          # 更新 gradle.properties 中的版本號
+          sed -i "s/pluginVersion = .*/pluginVersion = $NEW_VERSION/" gradle.properties
+          
+          echo "版本號已更新為: $NEW_VERSION"
+
+      - name: 更新 CHANGELOG
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          RELEASE_NOTES="${{ github.event.inputs.release_notes }}"
+          DATE=$(date +"%Y-%m-%d")
+          
+          # 備份原始 CHANGELOG
+          cp CHANGELOG.md CHANGELOG.md.bak
+          
+          # 創建新的 CHANGELOG 內容
+          {
+            echo "# Changelog"
+            echo ""
+            echo "## [$NEW_VERSION] - $DATE"
+            echo ""
+            if [ -n "$RELEASE_NOTES" ]; then
+              echo "$RELEASE_NOTES"
+            else
+              echo "### 變更"
+              echo "- 版本更新至 $NEW_VERSION"
+            fi
+            echo ""
+            # 添加原始內容（跳過第一行標題）
+            tail -n +2 CHANGELOG.md.bak
+          } > CHANGELOG.md
+          
+          rm CHANGELOG.md.bak
+
+      - name: 建構專案
+        run: |
+          ./gradlew clean build
+          
+      - name: 執行測試
+        run: |
+          ./gradlew test
+
+      - name: 建構插件發布包
+        run: |
+          ./gradlew buildPlugin
+
+      - name: 提交版本變更
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add gradle.properties CHANGELOG.md
+          git commit -m "chore: 發布版本 $NEW_VERSION"
+          git push
+
+      - name: 創建 Git 標籤
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          
+          git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION"
+          git push origin "v$NEW_VERSION"
+
+      - name: 創建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.new_version.outputs.new_version }}
+          name: Release v${{ steps.new_version.outputs.new_version }}
+          body: |
+            ## 🚀 Release v${{ steps.new_version.outputs.new_version }}
+            
+            ### 📦 下載
+            - [LDAP Manager Plugin](https://github.com/${{ github.repository }}/releases/download/v${{ steps.new_version.outputs.new_version }}/LDAP-Manager-${{ steps.new_version.outputs.new_version }}.zip)
+            
+            ### 📋 變更內容
+            ${{ github.event.inputs.release_notes || '版本更新' }}
+            
+            ### 🔧 安裝說明
+            1. 下載 `LDAP-Manager-${{ steps.new_version.outputs.new_version }}.zip` 檔案
+            2. 在 IntelliJ IDEA 中，前往 `File` > `Settings` > `Plugins`
+            3. 點擊齒輪圖示，選擇 `Install Plugin from Disk...`
+            4. 選擇下載的 ZIP 檔案並安裝
+            5. 重新啟動 IDE
+            
+            ---
+            
+            **完整變更日誌**: https://github.com/${{ github.repository }}/compare/v${{ steps.current_version.outputs.current_version }}...v${{ steps.new_version.outputs.new_version }}
+          files: |
+            build/distributions/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: 發布摘要
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          echo "## 🎉 發布完成!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**新版本**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "**發布類型**: ${{ github.event.inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release 連結**: [查看 Release](https://github.com/${{ github.repository }}/releases/tag/v$NEW_VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 建構產物" >> $GITHUB_STEP_SUMMARY
+          echo "- LDAP Manager Plugin ZIP 檔案已上傳至 Release" >> $GITHUB_STEP_SUMMARY
