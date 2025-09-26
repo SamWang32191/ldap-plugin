@@ -5,14 +5,7 @@
     <vendor email="support@ldapplugin.com" url="https://github.com/ldap-plugin">LDAP Plugin Team</vendor>
 
     <description><![CDATA[
-    一個功能完整的 LDAP 管理插件，支援：
-    <ul>
-        <li>LDAP 伺服器連線管理</li>
-        <li>LDAP 目錄瀏覽和搜尋</li>
-        <li>LDAP 條目的新增、修改、刪除操作</li>
-        <li>多個 LDAP 伺服器連線</li>
-        <li>連線設定的持久化存儲</li>
-    </ul>
+    LDAP Manager is a user-friendly tool for connecting to and managing LDAP directory services in IntelliJ IDEA. It lets you securely connect to multiple servers, browse directory trees, search entries with standard LDAP filters, and perform common CRUD operations on entries. Settings are persisted across restarts, and the plugin integrates into the IDE tool window for a streamlined workflow.
     ]]></description>
 
     <change-notes><![CDATA[

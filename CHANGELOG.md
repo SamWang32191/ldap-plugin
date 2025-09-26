@@ -1,28 +1,29 @@
 # Changelog
 
+## [Unreleased]
+
 ## [1.0.3] - 2025-09-26
 
 ### 變更
-- 版本更新至 1.0.3
 
+- 版本更新至 1.0.3
 
 ## [1.0.2] - 2025-09-26
 
 ### 變更
-- 版本更新至 1.0.2
 
+- 版本更新至 1.0.2
 
 ## [1.0.1] - 2025-09-26
 
 ### 變更
+
 - 版本更新至 1.0.1
-
-
-## [Unreleased]
 
 ## [1.0.0] - 2024-01-01
 
 ### 新增
+
 - 初始版本發布
 - 基本 LDAP 連線功能
 - LDAP 目錄瀏覽器
@@ -30,8 +31,8 @@
 - 多個 LDAP 伺服器連線支援
 - 連線設定的持久化存儲
 
-### 修改
-
-### 修復
-
-### 移除
+[Unreleased]: https://github.com/ldap-plugin/ldap-plugin/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/ldap-plugin/ldap-plugin/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/ldap-plugin/ldap-plugin/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/ldap-plugin/ldap-plugin/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/ldap-plugin/ldap-plugin/commits/v1.0.0

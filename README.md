@@ -175,16 +175,6 @@ src/main/resources/META-INF/
 - `./gradlew clean` - 清理建置檔案
 - `./gradlew build` - 編譯和打包插件
 - `./gradlew runIde` - 在開發模式下運行 IDE
-- `./gradlew test` - 執行單元測試
-- `./gradlew koverHtmlReport` - 產生程式碼覆蓋率報告
-- `./gradlew runPluginVerifier` - 執行插件驗證
-- `./gradlew publishPlugin` - 發布插件到 JetBrains Plugin Repository
-
-### 開發工具
-- **程式碼品質**: Qodana 靜態程式碼分析
-- **測試覆蓋率**: Kover 測試覆蓋率報告
-- **變更日誌**: 自動從 CHANGELOG.md 產生發布說明
-- **插件驗證**: IntelliJ Plugin Verifier 相容性檢查
 
 ## 授權條款
 

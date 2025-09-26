@@ -16,15 +16,22 @@ plugins {
 group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
-// 配置專案使用 Java 21
+// 使用 JDK 21 工具鏈，但為了與目標 IntelliJ 平台相容，將位元組碼目標設為 17
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 // 配置 Kotlin 編譯選項
 kotlin {
     jvmToolchain(21)
+}
+
+// 讓 Kotlin 以 JVM 17 目標編譯，以符合 2025.1 平台需求
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
 // 配置專案儲存庫
@@ -85,6 +92,11 @@ tasks {
         gradleVersion = properties("gradleVersion").get()
     }
 
+    // Disable building Searchable Options during build/verifier to avoid headless IDE leaks on JBR 21
+    buildSearchableOptions {
+        enabled = false
+    }
+
     patchPluginXml {
         version = properties("pluginVersion")
         sinceBuild = properties("pluginSinceBuild")
@@ -123,5 +135,10 @@ tasks {
         token = environment("PUBLISH_TOKEN")
         // pluginVersion 基於 SemVer (https://semver.org) 和 IntelliJ Platform 版本相容性
         channels = listOf("default")
+    }
+
+    // Restrict verifier to the declared platform version to avoid missing build downloads
+    runPluginVerifier {
+        ideVersions = listOf(properties("platformVersion").get())
     }
 }
